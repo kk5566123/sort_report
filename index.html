@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>氣泡排序法學習頁面</title>
+    <style>
+        :root {
+            --bg: #f7efe4;
+            --panel: rgba(255, 252, 247, 0.86);
+            --panel-strong: #fffaf2;
+            --text: #1c2430;
+            --muted: #566273;
+            --line: rgba(28, 36, 48, 0.12);
+            --primary: #d95d39;
+            --primary-deep: #a63f24;
+            --accent: #1d6b73;
+            --accent-soft: #f3c96b;
+            --danger: #ca4b48;
+            --success: #3f8f5a;
+            --shadow: 0 18px 45px rgba(76, 49, 27, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(243, 201, 107, 0.38), transparent 28%),
+                radial-gradient(circle at 88% 16%, rgba(29, 107, 115, 0.16), transparent 20%),
+                linear-gradient(180deg, #f6ebdb 0%, #f7efe4 42%, #efe6d8 100%);
+        }
+
+        .page {
+            width: min(1160px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 32px 0 56px;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .hero-card,
+        .panel,
+        .metric,
+        .timeline li,
+        .complexity-table,
+        .code-box {
+            background: var(--panel);
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+        }
+
+        .hero-card {
+            border-radius: 28px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-card::after {
+            content: "";
+            position: absolute;
+            inset: auto -40px -60px auto;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: rgba(217, 93, 57, 0.12);
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(29, 107, 115, 0.08);
+            color: var(--accent);
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin: 0;
+            line-height: 1.15;
+        }
+
+        h1 {
+            margin-top: 18px;
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            max-width: 10ch;
+        }
+
+        .hero p,
+        .panel p,
+        .metric p,
+        .timeline li,
+        td,
+        th {
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .intro {
+            margin-top: 14px;
+            max-width: 58ch;
+            font-size: 1.02rem;
+        }
+
+        .summary {
+            display: grid;
+            gap: 14px;
+        }
+
+        .metric {
+            border-radius: 22px;
+            padding: 18px 18px 16px;
+        }
+
+        .metric strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+            color: var(--text);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 24px;
+        }
+
+        .panel {
+            border-radius: 28px;
+            padding: 24px;
+        }
+
+        .panel-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .panel-title span {
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        button {
+            border: none;
+            border-radius: 999px;
+            padding: 12px 20px;
+            font-size: 0.98rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+        }
+
+        button:hover:enabled {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(28, 36, 48, 0.12);
+        }
+
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .primary-btn {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .secondary-btn {
+            background: #fff;
+            color: var(--text);
+            border: 1px solid var(--line);
+        }
+
+        .ghost-btn {
+            background: rgba(29, 107, 115, 0.08);
+            color: var(--accent);
+        }
+
+        .array-stage {
+            min-height: 310px;
+            padding: 22px 18px 18px;
+            border-radius: 24px;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(248, 241, 229, 0.85)),
+                repeating-linear-gradient(
+                    to right,
+                    rgba(29, 107, 115, 0.04) 0,
+                    rgba(29, 107, 115, 0.04) 1px,
+                    transparent 1px,
+                    transparent 64px
+                );
+            border: 1px solid rgba(29, 107, 115, 0.08);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .array {
+            min-height: 250px;
+            display: flex;
+            align-items: end;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .bar-wrap {
+            width: min(58px, 11vw);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bar {
+            width: 100%;
+            border-radius: 18px 18px 10px 10px;
+            background: linear-gradient(180deg, #1d6b73, #184d54);
+            color: #fff;
+            display: flex;
+            align-items: start;
+            justify-content: center;
+            padding-top: 12px;
+            font-weight: 700;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+            transition: transform 0.32s ease, background 0.28s ease, opacity 0.28s ease;
+        }
+
+        .bar.active {
+            background: linear-gradient(180deg, #f0a33a, #d67d18);
+            transform: translateY(-8px);
+        }
+
+        .bar.swap {
+            background: linear-gradient(180deg, #ca4b48, #9b332f);
+        }
+
+        .bar.sorted {
+            background: linear-gradient(180deg, #58a36b, #3f8f5a);
+        }
+
+        .index-label {
+            font-size: 0.84rem;
+            color: var(--muted);
+        }
+
+        .stats {
+            margin-top: 18px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .stat {
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(28, 36, 48, 0.08);
+            padding: 14px;
+        }
+
+        .stat span {
+            display: block;
+            font-size: 0.82rem;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .stat strong {
+            font-size: 1.4rem;
+            color: var(--text);
+        }
+
+        .step-box {
+            border-radius: 22px;
+            padding: 18px;
+            background: var(--panel-strong);
+            border: 1px solid rgba(28, 36, 48, 0.08);
+        }
+
+        .step-badge {
+            display: inline-block;
+            margin-bottom: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(217, 93, 57, 0.12);
+            color: var(--primary-deep);
+            font-size: 0.85rem;
+            font-weight: 800;
+        }
+
+        .timeline {
+            list-style: none;
+            margin: 16px 0 0;
+            padding: 0;
+            display: grid;
+            gap: 12px;
+        }
+
+        .timeline li {
+            border-radius: 20px;
+            padding: 16px 18px;
+        }
+
+        .timeline strong {
+            display: block;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .complexity-table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow: hidden;
+            border-radius: 22px;
+            margin-top: 18px;
+        }
+
+        .complexity-table th,
+        .complexity-table td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(28, 36, 48, 0.08);
+        }
+
+        .complexity-table th {
+            color: var(--text);
+            background: rgba(29, 107, 115, 0.08);
+        }
+
+        .complexity-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .code-box {
+            margin-top: 18px;
+            border-radius: 22px;
+            padding: 18px;
+            background: #fff9f1;
+        }
+
+        pre {
+            margin: 0;
+            overflow: auto;
+            font-family: Consolas, "Courier New", monospace;
+            color: #283341;
+            line-height: 1.6;
+        }
+
+        .note {
+            margin-top: 14px;
+            padding: 14px 16px;
+            border-left: 4px solid var(--accent-soft);
+            background: rgba(243, 201, 107, 0.14);
+            border-radius: 14px;
+            color: #614e1d;
+        }
+
+        @media (max-width: 980px) {
+            .hero,
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .page {
+                width: min(100% - 20px, 1000px);
+                padding-top: 18px;
+            }
+
+            .hero-card,
+            .panel {
+                border-radius: 22px;
+                padding: 20px;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .bar-wrap {
+                width: min(42px, 12vw);
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <section class="hero">
+            <article class="hero-card">
+                <div class="eyebrow">排序演算法入門</div>
+                <h1>氣泡排序法 Bubble Sort</h1>
+                <p class="intro">
+                    氣泡排序會從左到右反覆比較相鄰兩個元素，若順序錯誤就交換。每完成一輪，最大的值會像氣泡一樣慢慢浮到最右邊，因此叫做氣泡排序。
+                </p>
+            </article>
+            <aside class="summary">
+                <div class="metric">
+                    <strong>核心原理</strong>
+                    <p>只比較相鄰元素，透過多輪交換，逐步把較大的元素推到陣列尾端。</p>
+                </div>
+                <div class="metric">
+                    <strong>適合學習的原因</strong>
+                    <p>規則直觀，容易觀察比較、交換、回合結束與排序完成的概念。</p>
+                </div>
+            </aside>
+        </section>
+
+        <section class="layout">
+            <article class="panel">
+                <div class="panel-title">
+                    <div>
+                        <span>互動演示</span>
+                        <h2>一步一步看它怎麼排</h2>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button id="startBtn" class="primary-btn">開始排序</button>
+                    <button id="shuffleBtn" class="secondary-btn">重新產生資料</button>
+                    <button id="resetBtn" class="ghost-btn">回到初始狀態</button>
+                </div>
+
+                <div class="array-stage">
+                    <div id="array" class="array" aria-label="氣泡排序視覺化區域"></div>
+                    <div class="stats">
+                        <div class="stat">
+                            <span>目前回合</span>
+                            <strong id="passCount">0</strong>
+                        </div>
+                        <div class="stat">
+                            <span>步驟編號</span>
+                            <strong id="stepCount">0</strong>
+                        </div>
+                        <div class="stat">
+                            <span>比較次數</span>
+                            <strong id="compareCount">0</strong>
+                        </div>
+                        <div class="stat">
+                            <span>交換次數</span>
+                            <strong id="swapCount">0</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step-box" style="margin-top: 18px;">
+                    <div class="step-badge">目前說明</div>
+                    <h3 id="stepTitle">等待開始</h3>
+                    <p id="stepDesc">按下「開始排序」後，系統會顯示每一次比較與交換，讓你看到最大的數如何逐步移到右側。</p>
+                </div>
+            </article>
+
+            <aside class="panel">
+                <div class="panel-title">
+                    <div>
+                        <span>流程拆解</span>
+                        <h2>操作過程的步驟</h2>
+                    </div>
+                </div>
+
+                <ul class="timeline">
+                    <li>
+                        <strong>1. 從陣列左邊開始</strong>
+                        先看第 1 個和第 2 個元素，接著再看第 2 個和第 3 個，以此類推往右比較。
+                    </li>
+                    <li>
+                        <strong>2. 如果左邊比右邊大就交換</strong>
+                        這個交換動作會把較大的數往右推，所以最大的值會逐漸往陣列末端移動。
+                    </li>
+                    <li>
+                        <strong>3. 一輪結束後，最右邊就固定</strong>
+                        第一輪結束後，最右邊一定是最大值；第二輪後，倒數第二個位置也會固定。
+                    </li>
+                    <li>
+                        <strong>4. 重複進行直到不用交換</strong>
+                        當整輪比較都沒有交換，表示資料已經有序，可以提前停止。
+                    </li>
+                </ul>
+
+                <div class="note">
+                    重點觀察：氣泡排序不是一次找出所有答案，而是每一輪只保證一個最大值到位。
+                </div>
+            </aside>
+        </section>
+
+        <section class="layout" style="margin-top: 24px;">
+            <article class="panel">
+                <div class="panel-title">
+                    <div>
+                        <span>複雜度</span>
+                        <h2>時間與空間成本</h2>
+                    </div>
+                </div>
+
+                <table class="complexity-table">
+                    <thead>
+                        <tr>
+                            <th>情況</th>
+                            <th>時間複雜度</th>
+                            <th>說明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>最佳情況</td>
+                            <td>O(n)</td>
+                            <td>若資料本來幾乎已排序，且有提早停止機制，只需做一輪檢查。</td>
+                        </tr>
+                        <tr>
+                            <td>平均情況</td>
+                            <td>O(n^2)</td>
+                            <td>大多數情況下，需要多輪比較與多次交換。</td>
+                        </tr>
+                        <tr>
+                            <td>最差情況</td>
+                            <td>O(n^2)</td>
+                            <td>若資料完全反序，幾乎每次比較都要交換。</td>
+                        </tr>
+                        <tr>
+                            <td>空間複雜度</td>
+                            <td>O(1)</td>
+                            <td>只使用少量額外變數，屬於原地排序。</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </article>
+
+            <article class="panel">
+                <div class="panel-title">
+                    <div>
+                        <span>演算法觀念</span>
+                        <h2>簡化版流程</h2>
+                    </div>
+                </div>
+
+                <div class="code-box">
+<pre>for 每一輪 i:
+    swapped = false
+    for 每個相鄰位置 j:
+        if arr[j] &gt; arr[j + 1]:
+            交換兩者
+            swapped = true
+    if swapped == false:
+        提前結束</pre>
+                </div>
+                <div class="note">
+                    提前結束機制很重要，因為它能讓原本已接近排序完成的資料，不必浪費完整的 $n^2$ 次比較。
+                </div>
+            </article>
+        </section>
+    </main>
+
+    <script>
+        const arrayContainer = document.getElementById("array");
+        const startBtn = document.getElementById("startBtn");
+        const shuffleBtn = document.getElementById("shuffleBtn");
+        const resetBtn = document.getElementById("resetBtn");
+        const stepTitle = document.getElementById("stepTitle");
+        const stepDesc = document.getElementById("stepDesc");
+        const passCount = document.getElementById("passCount");
+        const stepCount = document.getElementById("stepCount");
+        const compareCount = document.getElementById("compareCount");
+        const swapCount = document.getElementById("swapCount");
+
+        const baseDelay = 720;
+        let sourceArray = [];
+        let workingArray = [];
+        let sorting = false;
+        let stats = createEmptyStats();
+
+        function createEmptyStats() {
+            return {
+                pass: 0,
+                step: 0,
+                compares: 0,
+                swaps: 0
+            };
+        }
+
+        function randomArray(size = 8, min = 12, max = 96) {
+            return Array.from({ length: size }, () =>
+                Math.floor(Math.random() * (max - min + 1)) + min
+            );
+        }
+
+        function updateStats() {
+            passCount.textContent = String(stats.pass);
+            stepCount.textContent = String(stats.step);
+            compareCount.textContent = String(stats.compares);
+            swapCount.textContent = String(stats.swaps);
+        }
+
+        function renderArray(array, state = {}) {
+            const { active = [], swapping = [], sortedFrom = array.length } = state;
+            const maxValue = Math.max(...array);
+
+            arrayContainer.innerHTML = "";
+            array.forEach((value, index) => {
+                const wrap = document.createElement("div");
+                wrap.className = "bar-wrap";
+
+                const bar = document.createElement("div");
+                bar.className = "bar";
+                bar.textContent = value;
+                bar.style.height = `${Math.max(70, (value / maxValue) * 220)}px`;
+
+                if (active.includes(index)) {
+                    bar.classList.add("active");
+                }
+                if (swapping.includes(index)) {
+                    bar.classList.add("swap");
+                }
+                if (index >= sortedFrom) {
+                    bar.classList.add("sorted");
+                }
+
+                const label = document.createElement("div");
+                label.className = "index-label";
+                label.textContent = `索引 ${index}`;
+
+                wrap.appendChild(bar);
+                wrap.appendChild(label);
+                arrayContainer.appendChild(wrap);
+            });
+        }
+
+        function sleep(ms) {
+            return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+
+        function setButtonsState(isSorting) {
+            startBtn.disabled = isSorting;
+            shuffleBtn.disabled = isSorting;
+            resetBtn.disabled = isSorting;
+        }
+
+        function resetView() {
+            workingArray = [...sourceArray];
+            stats = createEmptyStats();
+            updateStats();
+            renderArray(workingArray);
+            stepTitle.textContent = "等待開始";
+            stepDesc.textContent = "按下「開始排序」後，系統會顯示每一次比較與交換，讓你看到最大的數如何逐步移到右側。";
+        }
+
+        function regenerate() {
+            if (sorting) {
+                return;
+            }
+            sourceArray = randomArray();
+            resetView();
+        }
+
+        async function bubbleSortVisual() {
+            sorting = true;
+            setButtonsState(true);
+
+            const array = [...workingArray];
+            const n = array.length;
+
+            for (let i = 0; i < n - 1; i += 1) {
+                let swapped = false;
+                stats.pass = i + 1;
+                updateStats();
+
+                stepTitle.textContent = `第 ${i + 1} 輪開始`;
+                stepDesc.textContent = `這一輪要把目前尚未固定區間中的最大值一路往右推。`;
+                renderArray(array, { sortedFrom: n - i });
+                await sleep(baseDelay);
+
+                for (let j = 0; j < n - i - 1; j += 1) {
+                    stats.step += 1;
+                    stats.compares += 1;
+                    updateStats();
+
+                    stepTitle.textContent = `步驟 ${stats.step}：比較相鄰元素`;
+                    stepDesc.textContent = `比較索引 ${j} 的 ${array[j]} 與索引 ${j + 1} 的 ${array[j + 1]}。如果左邊比較大，就交換位置。`;
+                    renderArray(array, { active: [j, j + 1], sortedFrom: n - i });
+                    await sleep(baseDelay);
+
+                    if (array[j] > array[j + 1]) {
+                        stats.swaps += 1;
+                        updateStats();
+                        swapped = true;
+
+                        [array[j], array[j + 1]] = [array[j + 1], array[j]];
+                        stepTitle.textContent = `步驟 ${stats.step}：發生交換`;
+                        stepDesc.textContent = `因為 ${array[j + 1]} 大於 ${array[j]}，所以交換後把較大的值往右移。`;
+                        renderArray(array, { active: [j, j + 1], swapping: [j, j + 1], sortedFrom: n - i });
+                        await sleep(baseDelay);
+                    }
+                }
+
+                renderArray(array, { sortedFrom: n - i - 1 });
+                stepTitle.textContent = `第 ${i + 1} 輪完成`;
+                stepDesc.textContent = `這一輪結束後，索引 ${n - i - 1} 的值已固定，不需要再比較。`;
+                await sleep(baseDelay - 120);
+
+                if (!swapped) {
+                    stepTitle.textContent = "提早結束";
+                    stepDesc.textContent = "這一輪完全沒有交換，代表陣列已經有序，因此可以直接停止。";
+                    renderArray(array, { sortedFrom: 0 });
+                    workingArray = array;
+                    sorting = false;
+                    setButtonsState(false);
+                    return;
+                }
+            }
+
+            workingArray = array;
+            renderArray(workingArray, { sortedFrom: 0 });
+            stepTitle.textContent = "排序完成";
+            stepDesc.textContent = "所有元素都已完成排序。你可以重新產生資料，再觀察一次氣泡排序的過程。";
+            sorting = false;
+            setButtonsState(false);
+        }
+
+        startBtn.addEventListener("click", () => {
+            if (!sorting) {
+                bubbleSortVisual();
+            }
+        });
+
+        shuffleBtn.addEventListener("click", regenerate);
+        resetBtn.addEventListener("click", resetView);
+
+        regenerate();
+    </script>
+</body>
+</html>
