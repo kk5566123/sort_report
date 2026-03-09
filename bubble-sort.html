@@ -67,6 +67,27 @@
             overflow: hidden;
         }
 
+        .top-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 18px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(255, 250, 242, 0.88);
+            border: 1px solid rgba(28, 36, 48, 0.08);
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 700;
+            box-shadow: 0 10px 24px rgba(76, 49, 27, 0.08);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .top-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px rgba(76, 49, 27, 0.12);
+        }
+
         .hero-card::after {
             content: "";
             position: absolute;
@@ -425,6 +446,7 @@
 </head>
 <body>
     <main class="page">
+        <a class="top-link" href="index.html">回首頁</a>
         <section class="hero">
             <article class="hero-card">
                 <div class="eyebrow">排序演算法入門</div>
