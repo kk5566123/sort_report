@@ -189,6 +189,19 @@
             margin-bottom: 18px;
         }
 
+        .speed-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 18px;
+            align-items: center;
+        }
+
+        .speed-label {
+            color: var(--muted);
+            font-weight: 700;
+        }
+
         button {
             border: none;
             border-radius: 999px;
@@ -223,6 +236,19 @@
         .ghost-btn {
             background: rgba(29, 107, 115, 0.08);
             color: var(--accent);
+        }
+
+        .speed-btn {
+            background: rgba(255, 255, 255, 0.78);
+            color: var(--text);
+            border: 1px solid rgba(28, 36, 48, 0.08);
+            padding: 10px 16px;
+        }
+
+        .speed-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: transparent;
         }
 
         .array-stage {
@@ -482,6 +508,13 @@
                     <button id="resetBtn" class="ghost-btn">回到初始狀態</button>
                 </div>
 
+                <div class="speed-controls">
+                    <span class="speed-label">播放速度</span>
+                    <button id="speedNormal" class="speed-btn active" type="button">正常</button>
+                    <button id="speedFast" class="speed-btn" type="button">加速</button>
+                    <button id="speedUltra" class="speed-btn" type="button">超快</button>
+                </div>
+
                 <div class="array-stage">
                     <div id="array" class="array" aria-label="氣泡排序視覺化區域"></div>
                     <div class="stats">
@@ -616,6 +649,11 @@
         const startBtn = document.getElementById("startBtn");
         const shuffleBtn = document.getElementById("shuffleBtn");
         const resetBtn = document.getElementById("resetBtn");
+        const speedButtons = {
+            normal: document.getElementById("speedNormal"),
+            fast: document.getElementById("speedFast"),
+            ultra: document.getElementById("speedUltra")
+        };
         const stepTitle = document.getElementById("stepTitle");
         const stepDesc = document.getElementById("stepDesc");
         const passCount = document.getElementById("passCount");
@@ -624,9 +662,15 @@
         const swapCount = document.getElementById("swapCount");
 
         const baseDelay = 720;
+        const speedMap = {
+            normal: 1,
+            fast: 0.55,
+            ultra: 0.28
+        };
         let sourceArray = [];
         let workingArray = [];
         let sorting = false;
+        let currentSpeed = "normal";
         let stats = createEmptyStats();
 
         function createEmptyStats() {
@@ -689,6 +733,17 @@
             return new Promise((resolve) => setTimeout(resolve, ms));
         }
 
+        function getDelay(ms = baseDelay) {
+            return Math.max(90, Math.round(ms * speedMap[currentSpeed]));
+        }
+
+        function setSpeed(speed) {
+            currentSpeed = speed;
+            Object.entries(speedButtons).forEach(([key, button]) => {
+                button.classList.toggle("active", key === speed);
+            });
+        }
+
         function setButtonsState(isSorting) {
             startBtn.disabled = isSorting;
             shuffleBtn.disabled = isSorting;
@@ -727,7 +782,7 @@
                 stepTitle.textContent = `第 ${i + 1} 輪開始`;
                 stepDesc.textContent = `這一輪要把目前尚未固定區間中的最大值一路往右推。`;
                 renderArray(array, { sortedFrom: n - i });
-                await sleep(baseDelay);
+                await sleep(getDelay());
 
                 for (let j = 0; j < n - i - 1; j += 1) {
                     stats.step += 1;
@@ -737,7 +792,7 @@
                     stepTitle.textContent = `步驟 ${stats.step}：比較相鄰元素`;
                     stepDesc.textContent = `比較索引 ${j} 的 ${array[j]} 與索引 ${j + 1} 的 ${array[j + 1]}。如果左邊比較大，就交換位置。`;
                     renderArray(array, { active: [j, j + 1], sortedFrom: n - i });
-                    await sleep(baseDelay);
+                    await sleep(getDelay());
 
                     if (array[j] > array[j + 1]) {
                         stats.swaps += 1;
@@ -748,14 +803,14 @@
                         stepTitle.textContent = `步驟 ${stats.step}：發生交換`;
                         stepDesc.textContent = `因為 ${array[j + 1]} 大於 ${array[j]}，所以交換後把較大的值往右移。`;
                         renderArray(array, { active: [j, j + 1], swapping: [j, j + 1], sortedFrom: n - i });
-                        await sleep(baseDelay);
+                        await sleep(getDelay());
                     }
                 }
 
                 renderArray(array, { sortedFrom: n - i - 1 });
                 stepTitle.textContent = `第 ${i + 1} 輪完成`;
                 stepDesc.textContent = `這一輪結束後，索引 ${n - i - 1} 的值已固定，不需要再比較。`;
-                await sleep(baseDelay - 120);
+                await sleep(getDelay(baseDelay - 120));
 
                 if (!swapped) {
                     stepTitle.textContent = "提早結束";
@@ -784,6 +839,9 @@
 
         shuffleBtn.addEventListener("click", regenerate);
         resetBtn.addEventListener("click", resetView);
+        Object.entries(speedButtons).forEach(([speed, button]) => {
+            button.addEventListener("click", () => setSpeed(speed));
+        });
 
         regenerate();
     </script>
