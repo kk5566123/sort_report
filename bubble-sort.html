@@ -351,6 +351,53 @@
             border: 1px solid rgba(28, 36, 48, 0.08);
         }
 
+        .insight-row {
+            margin-top: 18px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            align-items: start;
+        }
+
+        .live-code {
+            border-radius: 22px;
+            padding: 18px;
+            background: var(--panel-strong);
+            border: 1px solid rgba(28, 36, 48, 0.08);
+        }
+
+        .live-code-header {
+            display: inline-block;
+            margin-bottom: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(29, 107, 115, 0.12);
+            color: var(--accent);
+            font-size: 0.85rem;
+            font-weight: 800;
+        }
+
+        .live-code pre {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(28, 36, 48, 0.08);
+            border-radius: 14px;
+            padding: 10px 12px;
+        }
+
+        .code-line {
+            display: block;
+            padding: 3px 8px;
+            border-radius: 8px;
+            transition: background 0.18s ease, color 0.18s ease;
+            white-space: pre;
+        }
+
+        .code-line.active {
+            background: rgba(217, 93, 57, 0.16);
+            color: #5d2a1f;
+            font-weight: 700;
+        }
+
         .step-badge {
             display: inline-block;
             margin-bottom: 12px;
@@ -467,6 +514,10 @@
             .stats {
                 grid-template-columns: 1fr;
             }
+
+            .insight-row {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -503,7 +554,8 @@
                 </div>
 
                 <div class="controls">
-                    <button id="startBtn" class="primary-btn">開始排序</button>
+                    <button id="startBtn" class="primary-btn">自動播放</button>
+                    <button id="nextBtn" class="secondary-btn">下一步</button>
                     <button id="shuffleBtn" class="secondary-btn">重新產生資料</button>
                     <button id="resetBtn" class="ghost-btn">回到初始狀態</button>
                 </div>
@@ -537,10 +589,27 @@
                     </div>
                 </div>
 
-                <div class="step-box" style="margin-top: 18px;">
-                    <div class="step-badge">目前說明</div>
-                    <h3 id="stepTitle">等待開始</h3>
-                    <p id="stepDesc">按下「開始排序」後，系統會顯示每一次比較與交換，讓你看到最大的數如何逐步移到右側。</p>
+                <div class="insight-row">
+                    <div class="step-box">
+                        <div class="step-badge">目前說明</div>
+                        <h3 id="stepTitle">等待開始</h3>
+                        <p id="stepDesc">按下「開始排序」後，系統會顯示每一次比較與交換，讓你看到最大的數如何逐步移到右側。</p>
+                    </div>
+                    <div class="live-code" aria-live="polite" aria-label="目前執行程式碼">
+                        <div class="live-code-header">目前執行程式碼</div>
+                        <pre id="liveCode">
+<span class="code-line" data-line="outer">for (i = 0; i &lt; n - 1; i++) {</span>
+<span class="code-line" data-line="swappedReset">    swapped = false;</span>
+<span class="code-line" data-line="inner">    for (j = 0; j &lt; n - i - 1; j++) {</span>
+<span class="code-line" data-line="compare">        if (arr[j] &gt; arr[j + 1]) {</span>
+<span class="code-line" data-line="swap">            swap(arr[j], arr[j + 1]);</span>
+<span class="code-line" data-line="markSwapped">            swapped = true;</span>
+<span class="code-line" data-line="innerClose">        }</span>
+<span class="code-line" data-line="outerClose">    }</span>
+<span class="code-line" data-line="breakCheck">    if (!swapped) break;</span>
+<span class="code-line" data-line="done">}</span>
+                        </pre>
+                    </div>
                 </div>
             </article>
 
@@ -647,6 +716,7 @@
     <script>
         const arrayContainer = document.getElementById("array");
         const startBtn = document.getElementById("startBtn");
+        const nextBtn = document.getElementById("nextBtn");
         const shuffleBtn = document.getElementById("shuffleBtn");
         const resetBtn = document.getElementById("resetBtn");
         const speedButtons = {
@@ -660,6 +730,7 @@
         const stepCount = document.getElementById("stepCount");
         const compareCount = document.getElementById("compareCount");
         const swapCount = document.getElementById("swapCount");
+        const codeLines = document.querySelectorAll(".code-line");
 
         const baseDelay = 720;
         const speedMap = {
@@ -672,6 +743,8 @@
         let sorting = false;
         let currentSpeed = "normal";
         let stats = createEmptyStats();
+        let steps = [];
+        let stepIndex = 0;
 
         function createEmptyStats() {
             return {
@@ -693,6 +766,12 @@
             stepCount.textContent = String(stats.step);
             compareCount.textContent = String(stats.compares);
             swapCount.textContent = String(stats.swaps);
+        }
+
+        function highlightCode(lineKey) {
+            codeLines.forEach((line) => {
+                line.classList.toggle("active", line.dataset.line === lineKey);
+            });
         }
 
         function renderArray(array, state = {}) {
@@ -744,19 +823,180 @@
             });
         }
 
-        function setButtonsState(isSorting) {
-            startBtn.disabled = isSorting;
-            shuffleBtn.disabled = isSorting;
-            resetBtn.disabled = isSorting;
+        function syncButtonsState() {
+            const finished = stepIndex >= steps.length;
+            startBtn.disabled = sorting || finished;
+            nextBtn.disabled = sorting || finished;
+            shuffleBtn.disabled = sorting;
+            resetBtn.disabled = sorting;
+        }
+
+        function cloneStats() {
+            return {
+                pass: stats.pass,
+                step: stats.step,
+                compares: stats.compares,
+                swaps: stats.swaps
+            };
+        }
+
+        function pushStep(stepList, arraySnapshot, title, desc, code, state = {}) {
+            stepList.push({
+                array: [...arraySnapshot],
+                stats: cloneStats(),
+                title,
+                desc,
+                code,
+                state
+            });
+        }
+
+        function buildBubbleSortSteps(initialArray) {
+            const stepList = [];
+            const arr = [...initialArray];
+            const n = arr.length;
+            stats = createEmptyStats();
+
+            for (let i = 0; i < n - 1; i += 1) {
+                stats.pass = i + 1;
+                pushStep(
+                    stepList,
+                    arr,
+                    `第 ${i + 1} 輪開始`,
+                    "外圈迴圈進入新一輪，準備把目前最大值往右推。",
+                    "outer",
+                    { sortedFrom: n - i }
+                );
+
+                let swapped = false;
+                pushStep(
+                    stepList,
+                    arr,
+                    `第 ${i + 1} 輪初始化`,
+                    "先把 swapped 設為 false，用來判斷本輪是否有交換。",
+                    "swappedReset",
+                    { sortedFrom: n - i }
+                );
+
+                for (let j = 0; j < n - i - 1; j += 1) {
+                    pushStep(
+                        stepList,
+                        arr,
+                        `步驟 ${stats.step + 1}：進入內圈迴圈`,
+                        `目前 j = ${j}，準備比較索引 ${j} 與 ${j + 1}。`,
+                        "inner",
+                        { active: [j, j + 1], sortedFrom: n - i }
+                    );
+
+                    stats.step += 1;
+                    stats.compares += 1;
+                    pushStep(
+                        stepList,
+                        arr,
+                        `步驟 ${stats.step}：比較相鄰元素`,
+                        `比較 ${arr[j]} 與 ${arr[j + 1]}，若左邊較大就交換。`,
+                        "compare",
+                        { active: [j, j + 1], sortedFrom: n - i }
+                    );
+
+                    if (arr[j] > arr[j + 1]) {
+                        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                        stats.swaps += 1;
+                        swapped = true;
+
+                        pushStep(
+                            stepList,
+                            arr,
+                            `步驟 ${stats.step}：發生交換`,
+                            `索引 ${j} 與 ${j + 1} 已互換，較大值往右移。`,
+                            "swap",
+                            { active: [j, j + 1], swapping: [j, j + 1], sortedFrom: n - i }
+                        );
+
+                        pushStep(
+                            stepList,
+                            arr,
+                            `步驟 ${stats.step}：標記已交換`,
+                            "swapped 變成 true，代表本輪尚未可提早結束。",
+                            "markSwapped",
+                            { active: [j, j + 1], sortedFrom: n - i }
+                        );
+                    }
+
+                    pushStep(
+                        stepList,
+                        arr,
+                        `步驟 ${stats.step}：內圈一次迭代結束`,
+                        "本次比較完成，繼續下一組相鄰元素。",
+                        "innerClose",
+                        { sortedFrom: n - i }
+                    );
+                }
+
+                pushStep(
+                    stepList,
+                    arr,
+                    `第 ${i + 1} 輪完成`,
+                    `索引 ${n - i - 1} 的值已固定，不需再比較。`,
+                    "outerClose",
+                    { sortedFrom: n - i - 1 }
+                );
+
+                pushStep(
+                    stepList,
+                    arr,
+                    "檢查是否可提早結束",
+                    "若本輪沒有交換，代表整體已排序完成。",
+                    "breakCheck",
+                    { sortedFrom: n - i - 1 }
+                );
+
+                if (!swapped) {
+                    pushStep(
+                        stepList,
+                        arr,
+                        "提早結束",
+                        "本輪沒有任何交換，排序提早完成。",
+                        "done",
+                        { sortedFrom: 0 }
+                    );
+                    return stepList;
+                }
+            }
+
+            pushStep(
+                stepList,
+                arr,
+                "排序完成",
+                "所有元素都已完成排序。",
+                "done",
+                { sortedFrom: 0 }
+            );
+
+            return stepList;
+        }
+
+        function applyStep(step) {
+            workingArray = [...step.array];
+            stats = { ...step.stats };
+            updateStats();
+            renderArray(workingArray, step.state);
+            stepTitle.textContent = step.title;
+            stepDesc.textContent = step.desc;
+            highlightCode(step.code);
         }
 
         function resetView() {
             workingArray = [...sourceArray];
             stats = createEmptyStats();
+            steps = buildBubbleSortSteps(workingArray);
+            stepIndex = 0;
             updateStats();
             renderArray(workingArray);
+            highlightCode("outer");
             stepTitle.textContent = "等待開始";
-            stepDesc.textContent = "按下「開始排序」後，系統會顯示每一次比較與交換，讓你看到最大的數如何逐步移到右側。";
+            stepDesc.textContent = "可按「下一步」逐格執行，或按「自動播放」連續執行，同時右側會高亮目前程式碼。";
+            syncButtonsState();
         }
 
         function regenerate() {
@@ -767,75 +1007,39 @@
             resetView();
         }
 
-        async function bubbleSortVisual() {
-            sorting = true;
-            setButtonsState(true);
-
-            const array = [...workingArray];
-            const n = array.length;
-
-            for (let i = 0; i < n - 1; i += 1) {
-                let swapped = false;
-                stats.pass = i + 1;
-                updateStats();
-
-                stepTitle.textContent = `第 ${i + 1} 輪開始`;
-                stepDesc.textContent = `這一輪要把目前尚未固定區間中的最大值一路往右推。`;
-                renderArray(array, { sortedFrom: n - i });
-                await sleep(getDelay());
-
-                for (let j = 0; j < n - i - 1; j += 1) {
-                    stats.step += 1;
-                    stats.compares += 1;
-                    updateStats();
-
-                    stepTitle.textContent = `步驟 ${stats.step}：比較相鄰元素`;
-                    stepDesc.textContent = `比較索引 ${j} 的 ${array[j]} 與索引 ${j + 1} 的 ${array[j + 1]}。如果左邊比較大，就交換位置。`;
-                    renderArray(array, { active: [j, j + 1], sortedFrom: n - i });
-                    await sleep(getDelay());
-
-                    if (array[j] > array[j + 1]) {
-                        stats.swaps += 1;
-                        updateStats();
-                        swapped = true;
-
-                        [array[j], array[j + 1]] = [array[j + 1], array[j]];
-                        stepTitle.textContent = `步驟 ${stats.step}：發生交換`;
-                        stepDesc.textContent = `因為 ${array[j + 1]} 大於 ${array[j]}，所以交換後把較大的值往右移。`;
-                        renderArray(array, { active: [j, j + 1], swapping: [j, j + 1], sortedFrom: n - i });
-                        await sleep(getDelay());
-                    }
-                }
-
-                renderArray(array, { sortedFrom: n - i - 1 });
-                stepTitle.textContent = `第 ${i + 1} 輪完成`;
-                stepDesc.textContent = `這一輪結束後，索引 ${n - i - 1} 的值已固定，不需要再比較。`;
-                await sleep(getDelay(baseDelay - 120));
-
-                if (!swapped) {
-                    stepTitle.textContent = "提早結束";
-                    stepDesc.textContent = "這一輪完全沒有交換，代表陣列已經有序，因此可以直接停止。";
-                    renderArray(array, { sortedFrom: 0 });
-                    workingArray = array;
-                    sorting = false;
-                    setButtonsState(false);
-                    return;
-                }
+        function stepForward() {
+            if (stepIndex >= steps.length) {
+                syncButtonsState();
+                return;
             }
 
-            workingArray = array;
-            renderArray(workingArray, { sortedFrom: 0 });
-            stepTitle.textContent = "排序完成";
-            stepDesc.textContent = "所有元素都已完成排序。你可以重新產生資料，再觀察一次氣泡排序的過程。";
+            applyStep(steps[stepIndex]);
+            stepIndex += 1;
+            syncButtonsState();
+        }
+
+        async function playAllSteps() {
+            if (sorting || stepIndex >= steps.length) {
+                return;
+            }
+
+            sorting = true;
+            syncButtonsState();
+
+            while (sorting && stepIndex < steps.length) {
+                stepForward();
+                await sleep(getDelay());
+            }
+
             sorting = false;
-            setButtonsState(false);
+            syncButtonsState();
         }
 
         startBtn.addEventListener("click", () => {
-            if (!sorting) {
-                bubbleSortVisual();
-            }
+            playAllSteps();
         });
+
+        nextBtn.addEventListener("click", stepForward);
 
         shuffleBtn.addEventListener("click", regenerate);
         resetBtn.addEventListener("click", resetView);
