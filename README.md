@@ -4,8 +4,6 @@
 姓名: 尤柏鈞  
 模擬頁面: [https://github.com/kk5566123/sort_report](https://github.com/kk5566123/sort_report)
 
-報告內容應該包括以下各節，簡述原理、複雜度分析與模擬實作內容。
-
 ## 氣泡排序法
 #### 1. 簡述原理
 
